@@ -284,6 +284,23 @@
             color: #00ff88;
             font-weight: bold;
         }
+
+        .history-btn {
+            background: transparent;
+            border: 1px solid #ff6b35;
+            color: #ff6b35;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: all 0.3s;
+        }
+
+        .history-btn:hover {
+            background: #ff6b35;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -292,13 +309,12 @@
     <div class="game-info">
         <div class="score-box">Puntuación: <span id="score">0</span></div>
         <div class="score-box"> Récord: <span id="highScore">0</span></div>
-        <button class="top10-btn" onclick="showTop10()">TOP 10</button>
     </div>
 
     <canvas id="gameCanvas" width="400" height="400"></canvas>
 
     <div class="controls">
-        Usa <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> para moverte | <kbd>Espacio</kbd> para pausar
+        Usa <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> para moverte | <kbd>Espacio</kbd> para pausar | <kbd>Top 10</kbd> ver ranking
     </div>
 
     <div class="start-screen" id="startScreen">
@@ -317,6 +333,15 @@
             <div class="char-count"><span id="charCount">0</span>/120</div>
             <div class="error-msg" id="errorMsg">El nombre no puede estar vacío</div>
             <button class="btn" onclick="saveRecord()">GUARDAR</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="top10Modal">
+        <div class="top10-panel">
+            <h2 id="top10Title">🏆 TOP 10 🏆</h2>
+            <div class="top10-list" id="top10List"></div>
+            <button class="btn btn-secondary" onclick="closeTop10()">CERRAR</button>
+            <button class="history-btn" onclick="showHistory()">Ver historial TOP 100</button>
         </div>
     </div>
 
@@ -345,9 +370,17 @@
         let isGameOver = false;
         let hasStarted = false;
 
+        function $(id) {
+            return document.getElementById(id);
+        }
+
         function getHighScore() {
-            const data = localStorage.getItem('snakeHighScores');
-            return data ? JSON.parse(data) : [];
+            try {
+                const data = localStorage.getItem('snakeHighScores');
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                return [];
+            }
         }
 
         function getTopScore() {
@@ -356,7 +389,10 @@
         }
 
         let highScore = getTopScore();
-        document.getElementById('highScore').textContent = highScore;
+        
+        if ($('highScore')) {
+            $('highScore').textContent = highScore;
+        }
 
         function initSnake() {
             snake = [
@@ -433,7 +469,9 @@
 
             if (head.x === food.x && head.y === food.y) {
                 score += 10;
-                document.getElementById('score').textContent = score;
+                if ($('score')) {
+                    $('score').textContent = score;
+                }
                 spawnFood();
             } else {
                 snake.pop();
@@ -448,7 +486,9 @@
         }
 
         function startGame() {
-            document.getElementById('startScreen').classList.add('hidden');
+            if ($('startScreen')) {
+                $('startScreen').classList.add('hidden');
+            }
             initSnake();
             spawnFood();
             score = 0;
@@ -457,7 +497,9 @@
             isGameOver = false;
             isPaused = false;
             hasStarted = true;
-            document.getElementById('score').textContent = score;
+            if ($('score')) {
+                $('score').textContent = score;
+            }
             draw();
             
             if (gameLoop) clearInterval(gameLoop);
@@ -468,24 +510,37 @@
             isGameOver = true;
             if (gameLoop) clearInterval(gameLoop);
             
-            document.getElementById('finalScore').textContent = score;
-            
             if (score > highScore && score > 0) {
-                document.getElementById('recordScoreDisplay').textContent = score;
-                document.getElementById('recordModal').style.display = 'flex';
-                document.getElementById('playerName').value = '';
-                document.getElementById('charCount').textContent = '0';
-                document.getElementById('errorMsg').style.display = 'none';
-                document.getElementById('playerName').focus();
+                if ($('recordScoreDisplay')) {
+                    $('recordScoreDisplay').textContent = score;
+                }
+                if ($('recordModal')) {
+                    $('recordModal').style.display = 'flex';
+                }
+                if ($('playerName')) {
+                    $('playerName').value = '';
+                }
+                if ($('charCount')) {
+                    $('charCount').textContent = '0';
+                }
+                if ($('errorMsg')) {
+                    $('errorMsg').style.display = 'none';
+                }
+                if ($('playerName')) {
+                    $('playerName').focus();
+                }
             } else {
-                document.getElementById('gameOver').style.display = 'block';
+                showTop10();
             }
         }
 
         function saveRecord() {
-            const nameInput = document.getElementById('playerName');
+            const nameInput = $('playerName');
+            const errorMsg = $('errorMsg');
+            
+            if (!nameInput || !errorMsg) return;
+            
             const name = nameInput.value.trim();
-            const errorMsg = document.getElementById('errorMsg');
             
             if (!name) {
                 errorMsg.textContent = 'El nombre no puede estar vacío';
@@ -513,16 +568,28 @@
             localStorage.setItem('snakeHighScores', JSON.stringify(top100));
             
             highScore = score;
-            document.getElementById('highScore').textContent = highScore;
+            if ($('highScore')) {
+                $('highScore').textContent = highScore;
+            }
             
-            document.getElementById('recordModal').style.display = 'none';
+            if ($('recordModal')) {
+                $('recordModal').style.display = 'none';
+            }
             showTop10();
         }
 
         function showTop10() {
             const scores = getHighScore();
             const top10 = scores.slice(0, 10);
-            const container = document.getElementById('historyList');
+            const container = $('top10List');
+            const modal = $('top10Modal');
+            const title = $('top10Title');
+            
+            if (!container || !modal) return;
+            
+            if (title) {
+                title.textContent = '🏆 TOP 10 🏆';
+            }
             
             if (top10.length === 0) {
                 container.innerHTML = '<p style="text-align:center;color:#888;">No hay puntuaciones aún</p>';
@@ -536,7 +603,33 @@
                 `).join('');
             }
             
-            document.getElementById('historyModal').style.display = 'flex';
+            modal.style.display = 'flex';
+        }
+
+        function showHistory() {
+            const scores = getHighScore();
+            const top100 = scores.slice(0, 100);
+            const container = $('historyList');
+            const modal = $('historyModal');
+            
+            if (!container || !modal) return;
+            
+            if (top100.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#888;">No hay puntuaciones aún</p>';
+            } else {
+                container.innerHTML = top100.map((entry, index) => `
+                    <div class="entry rank-${index + 1}">
+                        <span class="rank-num">#${index + 1}</span>
+                        <span class="rank-name">${escapeHtml(entry.name)}</span>
+                        <span class="rank-score">${entry.score}</span>
+                    </div>
+                `).join('');
+            }
+            
+            if ($('top10Modal')) {
+                $('top10Modal').style.display = 'none';
+            }
+            modal.style.display = 'flex';
         }
 
         function escapeHtml(text) {
@@ -545,29 +638,48 @@
             return div.innerHTML;
         }
 
-        function closeHistory() {
-            document.getElementById('historyModal').style.display = 'none';
+        function closeTop10() {
+            if ($('top10Modal')) {
+                $('top10Modal').style.display = 'none';
+            }
         }
 
-        document.getElementById('playerName').addEventListener('input', function() {
-            const len = this.value.length;
-            document.getElementById('charCount').textContent = len;
-            if (len <= 120) {
-                document.getElementById('errorMsg').style.display = 'none';
+        function closeHistory() {
+            if ($('historyModal')) {
+                $('historyModal').style.display = 'none';
             }
-        });
+        }
 
-        document.getElementById('playerName').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                saveRecord();
-            }
-        });
+        if ($('playerName')) {
+            $('playerName').addEventListener('input', function() {
+                const len = this.value.length;
+                if ($('charCount')) {
+                    $('charCount').textContent = len;
+                }
+                if ($('errorMsg')) {
+                    $('errorMsg').style.display = 'none';
+                }
+            });
+
+            $('playerName').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    saveRecord();
+                }
+            });
+        }
 
         document.addEventListener('keydown', (e) => {
-            if (document.getElementById('recordModal').style.display === 'flex' || 
-                document.getElementById('historyModal').style.display === 'flex') {
+            const recordModalEl = $('recordModal');
+            const top10ModalEl = $('top10Modal');
+            const historyModalEl = $('historyModal');
+            
+            if ((recordModalEl && recordModalEl.style.display === 'flex') || 
+                (top10ModalEl && top10ModalEl.style.display === 'flex') ||
+                (historyModalEl && historyModalEl.style.display === 'flex')) {
                 if (e.code === 'Escape') {
+                    closeTop10();
                     closeHistory();
+                    if (recordModalEl) recordModalEl.style.display = 'none';
                 }
                 return;
             }
@@ -575,6 +687,9 @@
             if (!hasStarted || isGameOver) {
                 if (e.code === 'Space') {
                     startGame();
+                }
+                if ((e.key === '1' || e.key === 't' || e.key === 'T') && !hasStarted) {
+                    showTop10();
                 }
                 return;
             }
@@ -605,6 +720,12 @@
                 dy = 0;
             }
         });
+
+        function openTop10() {
+            showTop10();
+        }
+
+        window.openTop10 = openTop10;
 
         initSnake();
         spawnFood();
