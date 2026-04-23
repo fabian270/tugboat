@@ -309,12 +309,14 @@
     <div class="game-info">
         <div class="score-box">Puntuación: <span id="score">0</span></div>
         <div class="score-box"> Récord: <span id="highScore">0</span></div>
+        <button class="top10-btn" onclick="showTop10UI()">TOP 10</button>
+        <button class="history-btn" onclick="showHistoryUI()">TOP 100</button>
     </div>
 
     <canvas id="gameCanvas" width="400" height="400"></canvas>
 
     <div class="controls">
-        Usa <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> para moverte | <kbd>Espacio</kbd> para pausar | <kbd>Top 10</kbd> ver ranking
+        Usa <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> para moverte | <kbd>Espacio</kbd> para jugar | <kbd>H</kbd> Top 10 | <kbd>L</kbd> Top 100 | <kbd>ESC</kbd> cerrar
     </div>
 
     <div class="start-screen" id="startScreen">
@@ -650,6 +652,16 @@
             }
         }
 
+        function showTop10UI() {
+            closeHistory();
+            showTop10();
+        }
+
+        function showHistoryUI() {
+            closeTop10();
+            showHistory();
+        }
+
         if ($('playerName')) {
             $('playerName').addEventListener('input', function() {
                 const len = this.value.length;
@@ -684,13 +696,27 @@
                 return;
             }
 
-            if (!hasStarted || isGameOver) {
+            if (e.code === 'KeyH') {
+                e.preventDefault();
+                showTop10UI();
+                return;
+            }
+            
+            if (e.code === 'KeyL') {
+                e.preventDefault();
+                showHistoryUI();
+                return;
+            }
+
+            if (!hasStarted) {
                 if (e.code === 'Space') {
+                    e.preventDefault();
                     startGame();
                 }
-                if ((e.key === '1' || e.key === 't' || e.key === 'T') && !hasStarted) {
-                    showTop10();
-                }
+                return;
+            }
+
+            if (isGameOver) {
                 return;
             }
 
@@ -721,11 +747,12 @@
             }
         });
 
-        function openTop10() {
-            showTop10();
-        }
-
-        window.openTop10 = openTop10;
+        window.showTop10UI = showTop10UI;
+        window.showHistoryUI = showHistoryUI;
+        window.closeTop10 = closeTop10;
+        window.closeHistory = closeHistory;
+        window.saveRecord = saveRecord;
+        window.startGame = startGame;
 
         initSnake();
         spawnFood();
